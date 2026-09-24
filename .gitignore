@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Documents & Diagrams (kept locally)
+MediCare_SRS.docx
+docs/
+*.docx
+*.pdf
+
+# Environment & Logs
+.env
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

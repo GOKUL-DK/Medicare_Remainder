@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharmacist Dashboard — MediCare Reminder</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">🏥</div>
+        <div class="sidebar-brand-text">
+          <h3>MediCare</h3>
+          <span>Pharmacist Portal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-user" onclick="openProfileModal()" title="Click to view & edit your dispensary profile & credentials">
+      <div class="sidebar-avatar">💊</div>
+      <div class="sidebar-user-info">
+        <p class="user-name" id="pharmTitle">Pharmacist</p>
+        <span class="user-role">Pharmacist • View Info</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Prescriptions</div>
+      <button class="nav-item active" onclick="scrollToSec('ordersSection', this)">
+        <span class="nav-icon">📥</span> Doctor Orders
+        <span class="nav-badge d-none" id="pendingBadgeSidebar">0</span>
+      </button>
+      <button class="nav-item" onclick="scrollToSec('refillsSection', this)">
+        <span class="nav-icon">🔄</span> Refill Requests
+      </button>
+
+      <div class="sidebar-section-label">Dispensing</div>
+      <button class="nav-item" onclick="scrollToSec('dispenseSection', this)">
+        <span class="nav-icon">💉</span> Dispense Medicine
+      </button>
+      <button class="nav-item" onclick="scrollToSec('vaccineSection', this)">
+        <span class="nav-icon">🔬</span> Schedule Vaccine
+      </button>
+
+      <div class="sidebar-section-label">Records</div>
+      <button class="nav-item" onclick="scrollToSec('patientsSection', this)">
+        <span class="nav-icon">👥</span> My Patients
+      </button>
+      <button class="nav-item" onclick="scrollToSec('searchSection', this)">
+        <span class="nav-icon">🔍</span> Search Patient
+      </button>
+      <button class="nav-item" onclick="scrollToSec('medicinesSection', this)">
+        <span class="nav-icon">📋</span> Medicine Records
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-sidebar-secondary" onclick="openPasswordModal()">
+        <span>👤</span> Account Settings
+      </button>
+      <button class="btn-sidebar-logout" onclick="logout()">
+        <span>🚪</span> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <div class="main-content">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2>Pharmacist Dashboard</h2>
+        <p>Manage prescriptions, dispense medications & patient records</p>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-pill">💊 Pharmacist</div>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Hero Banner -->
+      <div class="hero-banner" style="background: linear-gradient(135deg, #1A73E8 0%, #7C3AED 100%);">
+        <div class="hero-text">
+          <h2>Welcome, Pharmacist! 💊</h2>
+          <p>Review and fulfill doctor prescriptions, manage refill requests, and ensure patient medication safety.</p>
+        </div>
+        <img src="images/pharmacist_illustration.jpg" alt="Pharmacist" class="hero-img">
+      </div>
+
+      <!-- 1. Doctor Orders -->
+      <div id="ordersSection" class="card card-accent-blue">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--accent-blue-light);">📥</div>
+            <div>
+              <p class="card-title">Incoming Doctor Prescription & Vaccine Orders</p>
+              <p class="card-subtitle">Prescriptions and vaccination orders submitted by supervising doctors</p>
+            </div>
+          </div>
+          <span id="pendingReqCountBadge" class="badge badge-amber d-none">0 Pending</span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th><th>Type</th><th>Item</th><th>Patient</th>
+                <th>Doctor</th><th>Dosage / Notes</th><th>Due Date</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="requestsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2. Refill Requests -->
+      <div id="refillsSection" class="card card-accent-amber">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--accent-amber-light);">🔄</div>
+            <div>
+              <p class="card-title">Patient Medicine Refill Requests</p>
+              <p class="card-subtitle">Refill requests submitted by patients when medication supplies are running low</p>
+            </div>
+          </div>
+          <span id="pendingRefillBadge" class="badge badge-amber d-none">0 Pending</span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th><th>Patient</th><th>Medicine</th>
+                <th>Current Qty</th><th>Patient Notes</th><th>Requested Date</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="refillsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. Search Patient -->
+      <div id="searchSection" class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:#F0F9FF;">🔍</div>
+            <div><p class="card-title">Search Patient</p></div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <input id="searchQ" placeholder="Search by patient name or email...">
+          </div>
+          <button class="primary" onclick="searchPatients(event)">🔍 Search</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Date of Birth</th></tr>
+            </thead>
+            <tbody id="searchResults"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 4. Dispense Medicine -->
+      <div id="dispenseSection" class="card card-accent-green">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--primary-light);">💉</div>
+            <div>
+              <p class="card-title">Prescribe / Dispense Medicine Directly</p>
+              <p class="card-subtitle">Directly add a medicine for OTC or self-managed prescriptions with clinical safety check</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Safety Alert -->
+        <div id="pharmSafetyAlertBox" class="safety-alert-box">
+          <div style="font-weight:700; margin-bottom:8px;">🛡️ Drug Interaction / Allergy Detected</div>
+          <div class="safety-alert-list" id="pharmSafetyAlertList"></div>
+          <div style="margin-top:10px; display:flex; align-items:center; gap:8px; padding:10px; background:rgba(255,255,255,0.6); border-radius:6px;">
+            <input type="checkbox" id="chkPharmOverride">
+            <label for="chkPharmOverride" style="font-weight:700; font-size:12.5px; color:#991B1B; cursor:pointer;">
+              I have consulted the clinical rationale and authorize safety override.
+            </label>
+          </div>
+        </div>
+
+        <form onsubmit="addMedicine(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Patient</label>
+              <select id="medPatient" onchange="checkPharmSafety()" required></select>
+            </div>
+            <div class="form-group">
+              <label>Medicine Name</label>
+              <input id="medName" oninput="debouncePharmSafety()" placeholder="e.g. Metformin, Amoxicillin" required>
+            </div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label>Dosage</label>
+              <input id="medDosage" placeholder="e.g. 500mg twice daily">
+            </div>
+            <div class="form-group">
+              <label>Time Slot</label>
+              <select id="medTimeSlot">
+                <option value="morning">☀️ Morning</option>
+                <option value="afternoon">🌤️ Afternoon</option>
+                <option value="evening">🌅 Evening</option>
+                <option value="night">🌙 Night</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Meal Timing</label>
+              <select id="medMealTiming">
+                <option value="after_meal">🍽️ After Meal</option>
+                <option value="before_meal">🥣 Before Meal</option>
+                <option value="with_food">🥪 With Food</option>
+                <option value="none">— No Requirement</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Quantity</label>
+              <input id="medQty" type="number" placeholder="e.g. 30">
+            </div>
+            <div class="form-group">
+              <label>Expiry Date</label>
+              <input id="medExpiry" type="date">
+            </div>
+            <div class="form-group">
+              <label>Due / Start Date</label>
+              <input id="medDue" type="date" required>
+            </div>
+          </div>
+          <button class="primary" type="submit">💊 Add Medicine</button>
+        </form>
+      </div>
+
+      <!-- 5. Schedule Vaccination -->
+      <div id="vaccineSection" class="card card-accent-purple">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--accent-purple-light);">🔬</div>
+            <div><p class="card-title">Schedule Vaccination</p></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Patient</label>
+            <select id="vaxPatient" required></select>
+          </div>
+          <div class="form-group">
+            <label>Vaccine</label>
+            <select id="vaxName" required></select>
+          </div>
+          <div class="form-group">
+            <label>Scheduled Date</label>
+            <input id="vaxDue" type="date" required>
+          </div>
+        </div>
+        <button class="primary" onclick="addVaccination(event)" style="background:var(--accent-purple);">
+          💉 Schedule Vaccine
+        </button>
+      </div>
+
+      <!-- 6. My Patients -->
+      <div id="patientsSection" class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:#F0FDF4;">👥</div>
+            <div><p class="card-title">My Assigned Patients</p></div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Medical History</th></tr>
+            </thead>
+            <tbody id="assignedBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 7. Medicine Records -->
+      <div id="medicinesSection" class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:#FFF7ED;">📋</div>
+            <div>
+              <p class="card-title">Medicines Managed & Dispensing Records</p>
+              <p class="card-subtitle">All medications dispensed to patients with status and label printing</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Patient</th><th>Medicine</th><th>Dosage</th>
+                <th>Due Date</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="medicinesBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<script src="js/api.js"></script>
+<script src="js/accountModal.js"></script>
+<script src="js/profileModal.js"></script>
+<script src="js/pharmacist.js"></script>
+<script>
+function scrollToSec(id, btn) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doctor Dashboard — MediCare Reminder</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">🏥</div>
+        <div class="sidebar-brand-text">
+          <h3>MediCare</h3>
+          <span>Doctor Portal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-user" onclick="openProfileModal()" title="Click to view & edit your physician credentials & profile">
+      <div class="sidebar-avatar">🩺</div>
+      <div class="sidebar-user-info">
+        <p class="user-name" id="docTitle">Doctor</p>
+        <span class="user-role">Physician • View Info</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Overview</div>
+      <button class="nav-item active" onclick="scrollToSection('analyticsSection')">
+        <span class="nav-icon">📊</span> Analytics
+      </button>
+      <button class="nav-item" onclick="scrollToSection('patientsSection')">
+        <span class="nav-icon">👥</span> My Patients
+      </button>
+
+      <div class="sidebar-section-label">Clinical</div>
+      <button class="nav-item" onclick="scrollToSection('prescribeSection')">
+        <span class="nav-icon">💊</span> Prescribe
+      </button>
+      <button class="nav-item" onclick="scrollToSection('requestsSection')">
+        <span class="nav-icon">📋</span> Prescriptions Sent
+      </button>
+      <button class="nav-item" onclick="scrollToSection('behindSection')">
+        <span class="nav-icon">⚠️</span> Behind Schedule
+      </button>
+
+      <div class="sidebar-section-label">Communication</div>
+      <button class="nav-item" onclick="scrollToSection('notesSection')">
+        <span class="nav-icon">📬</span> Patient Notes
+        <span class="nav-badge d-none" id="notesBadgeSidebar">0</span>
+      </button>
+      <button class="nav-item" onclick="scrollToSection('notifSection')">
+        <span class="nav-icon">🔔</span> Send Notification
+      </button>
+      <button class="nav-item" onclick="scrollToSection('alertsSection')">
+        <span class="nav-icon">🚨</span> Recent Alerts
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-sidebar-secondary" id="btnEnablePush" onclick="NotifEngine.requestPermission()">
+        <span>🔔</span> Push Alerts
+      </button>
+      <button class="btn-sidebar-secondary" onclick="openPasswordModal()">
+        <span>👤</span> Account Settings
+      </button>
+      <button class="btn-sidebar-logout" onclick="logout()">
+        <span>🚪</span> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <div class="main-content">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2>Doctor Dashboard</h2>
+        <p>Manage patients, prescriptions & clinical safety</p>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-pill">🩺 Doctor</div>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <div class="hero-text">
+          <h2>Good day, Doctor! 👋</h2>
+          <p>Review patient adherence, prescribe medications with safety checks, and stay on top of your clinical dashboard.</p>
+        </div>
+        <img src="images/dashboard_banner.jpg" alt="Medical Dashboard" class="hero-img">
+      </div>
+
+      <!-- Print Header -->
+      <div class="print-header" style="display:none;">
+        <h1 style="color:#0F6E56; margin:0;">MediCare Clinical Adherence Report</h1>
+        <p style="margin:4px 0; color:#555;">Official Patient Adherence Summary & Prescription Audit</p>
+        <p id="printMeta" style="margin:4px 0; font-size:12px;"></p>
+      </div>
+
+      <!-- 1. Analytics Section -->
+      <div id="analyticsSection" class="card card-accent-green">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--primary-light);">📊</div>
+            <div>
+              <p class="card-title">Clinical Analytics & Adherence Overview</p>
+              <p class="card-subtitle">Visual performance metrics across your patient population</p>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="secondary btn-sm" onclick="exportAdherenceCSV()">📊 Export CSV</button>
+            <button class="primary btn-sm" onclick="exportClinicalReport()">📄 PDF Report</button>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
+          <div class="chart-container">
+            <p class="chart-title">Patient Adherence Comparison</p>
+            <div style="position:relative; height:220px;">
+              <canvas id="populationChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-container">
+            <p class="chart-title" id="patientDoughnutTitle">Selected Patient Adherence Breakdown</p>
+            <div style="position:relative; height:220px;">
+              <canvas id="patientDoughnutChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Patient Notes -->
+      <div id="notesSection" class="card card-accent-purple">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--accent-purple-light);">📬</div>
+            <div>
+              <p class="card-title">Patient Notes & Symptom Reports</p>
+              <p class="card-subtitle">Direct feedback, symptom updates, and side-effect inquiries from patients</p>
+            </div>
+          </div>
+          <span id="openNotesBadge" class="badge badge-purple d-none">0 Open</span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Patient</th>
+                <th>Subject</th>
+                <th>Message / Notes</th>
+                <th>Doctor Reply</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="patientNotesBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. Send Notification -->
+      <div id="notifSection" class="card card-accent-green">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--primary-light);">💬</div>
+            <div>
+              <p class="card-title">Send Notification to Patient</p>
+              <p class="card-subtitle">Write a direct notification, health guidance, or dose reminder to your patients</p>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Select Patient</label>
+            <select id="notifPatient" required>
+              <option value="">-- Select Patient --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Notification Type</label>
+            <select id="notifType">
+              <option value="doctor-message">👨‍⚕️ Doctor Advice</option>
+              <option value="doctor-reminder">⏰ Dose Reminder</option>
+              <option value="doctor-checkin">📋 Health Check-in</option>
+              <option value="doctor-warning">⚠️ Urgent Notice</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Message</label>
+          <input id="notifMessage" placeholder="Type notification message here..." required>
+        </div>
+        <button class="primary" onclick="sendPatientNotification(event)">🔔 Send Notification</button>
+        <div id="notifSentStatus" style="display:none; font-size:13px; color:var(--primary); margin-top:8px; font-weight:600;"></div>
+      </div>
+
+      <!-- 4. Prescribe Medicine -->
+      <div id="prescribeSection" class="card card-accent-blue">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--accent-blue-light);">💊</div>
+            <div>
+              <p class="card-title">Prescribe Medicine or Vaccine</p>
+              <p class="card-subtitle">Send a prescription or vaccine order to the pharmacist with automatic safety checks</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Safety Alert -->
+        <div id="safetyAlertBox" class="safety-alert-box">
+          <div style="font-weight:700; margin-bottom:8px;">🛡️ Clinical Safety Warning Detected</div>
+          <div class="safety-alert-list" id="safetyAlertList"></div>
+          <div style="margin-top:12px; display:flex; align-items:center; gap:8px; padding:10px; background:rgba(255,255,255,0.6); border-radius:6px;">
+            <input type="checkbox" id="chkSafetyOverride" onchange="toggleSafetyOverride()">
+            <label for="chkSafetyOverride" style="font-weight:700; font-size:12.5px; color:#991B1B; cursor:pointer;">
+              I have reviewed the clinical risks and authorize prescription override.
+            </label>
+          </div>
+        </div>
+
+        <form onsubmit="sendPharmacistRequest(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Patient</label>
+              <select id="reqPatient" onchange="onReqPatientChange()" required>
+                <option value="">-- Select Patient --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Pharmacist</label>
+              <select id="reqPharmacist" required>
+                <option value="">-- Select Pharmacist --</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Order Type</label>
+              <select id="reqType" onchange="onReqTypeChange()">
+                <option value="medicine">💊 Medicine</option>
+                <option value="vaccine">💉 Vaccination</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Medicine / Vaccine Name</label>
+              <input id="reqItemName" oninput="debounceSafetyCheck()" placeholder="e.g. Metformin, Amoxicillin" required>
+            </div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label>Dosage</label>
+              <input id="reqDosage" placeholder="e.g. 500mg twice daily">
+            </div>
+            <div class="form-group">
+              <label>Time Slot</label>
+              <select id="reqTimeSlot">
+                <option value="morning">☀️ Morning</option>
+                <option value="afternoon">🌤️ Afternoon</option>
+                <option value="evening">🌅 Evening</option>
+                <option value="night">🌙 Night</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Meal Timing</label>
+              <select id="reqMealTiming">
+                <option value="after_meal">🍽️ After Meal</option>
+                <option value="before_meal">🥣 Before Meal</option>
+                <option value="with_food">🥪 With Food</option>
+                <option value="none">— No Requirement</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Quantity</label>
+              <input id="reqQty" type="number" placeholder="e.g. 30">
+            </div>
+            <div class="form-group">
+              <label>Due / Start Date</label>
+              <input id="reqDueDate" type="date" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Instructions / Notes</label>
+            <input id="reqInstructions" placeholder="Any special instructions for pharmacist or patient...">
+          </div>
+          <button class="btn-blue" type="submit" id="btnSubmitPrescription">📤 Send Prescription Order</button>
+          <div id="reqSentStatus" style="display:none; font-size:13px; color:var(--accent-blue); margin-top:8px; font-weight:600;"></div>
+        </form>
+      </div>
+
+      <!-- 5. Prescriptions Sent -->
+      <div id="requestsSection" class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:#F0F4FF;">📋</div>
+            <div>
+              <p class="card-title">Prescriptions & Vaccine Orders Sent to Pharmacist</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th><th>Type</th><th>Item</th><th>Patient</th>
+                <th>Pharmacist</th><th>Dosage / Instructions</th><th>Due Date</th><th>When</th>
+              </tr>
+            </thead>
+            <tbody id="requestsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 6. Behind Schedule -->
+      <div id="behindSection" class="card card-accent-red">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--accent-red-light);">⚠️</div>
+            <div>
+              <p class="card-title">Patients Behind Schedule</p>
+              <p class="card-subtitle">Patients with missed or overdue medications needing attention</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>
+            <tbody id="behindBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 7. Recent Alerts -->
+      <div id="alertsSection" class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:#FFF7ED;">🚨</div>
+            <div><p class="card-title">Recent Alerts</p></div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Patient</th><th>Message</th><th>When</th></tr></thead>
+            <tbody id="alertsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 8. My Assigned Patients -->
+      <div id="patientsSection" class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:#F0FDF4;">👥</div>
+            <div>
+              <p class="card-title">My Assigned Patients</p>
+              <p class="card-subtitle">Click "View Details" to see full clinical profile, vitals & adherence charts</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>Email</th><th>Assigned Pharmacist</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="patientsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 9. Patient Detail Card -->
+      <div class="detail-card" id="detailCard" style="display:none;">
+        <div class="detail-card-header">
+          <div class="detail-avatar">🧑</div>
+          <div class="detail-patient-info">
+            <h3 id="detailName">Patient Name</h3>
+            <p id="detailSubtitle">Patient Details</p>
+          </div>
+          <button class="secondary btn-sm" onclick="closeDetailCard()" style="margin-left:auto;">✕ Close</button>
+        </div>
+
+        <div class="detail-card-body">
+          <!-- Stat cards -->
+          <div class="stat-grid" style="margin-bottom:20px;">
+            <div class="stat-card" style="--stat-color:var(--primary); --stat-bg:var(--primary-light);">
+              <div class="stat-icon">📈</div>
+              <div class="stat-info">
+                <div class="stat-value" id="adherenceRate">—</div>
+                <div class="stat-label">Adherence Rate</div>
+              </div>
+            </div>
+            <div class="stat-card" style="--stat-color:var(--accent-blue); --stat-bg:var(--accent-blue-light);">
+              <div class="stat-icon">💊</div>
+              <div class="stat-info">
+                <div class="stat-value" id="totalMeds">—</div>
+                <div class="stat-label">Total Medicines</div>
+              </div>
+            </div>
+            <div class="stat-card" style="--stat-color:var(--accent-red); --stat-bg:var(--accent-red-light);">
+              <div class="stat-icon">⚠️</div>
+              <div class="stat-info">
+                <div class="stat-value" id="missedCount">—</div>
+                <div class="stat-label">Missed / Late</div>
+              </div>
+            </div>
+            <div class="stat-card" style="--stat-color:var(--accent-teal); --stat-bg:var(--accent-teal-light);">
+              <div class="stat-icon">❤️</div>
+              <div class="stat-info">
+                <div class="stat-value" id="avgBP">—</div>
+                <div class="stat-label">Avg BP (mmHg)</div>
+              </div>
+            </div>
+            <div class="stat-card" style="--stat-color:var(--accent-amber); --stat-bg:var(--accent-amber-light);">
+              <div class="stat-icon">🩸</div>
+              <div class="stat-info">
+                <div class="stat-value" id="avgGlucose">—</div>
+                <div class="stat-label">Avg Glucose (mg/dL)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vitals Correlation Chart -->
+          <div class="chart-container" style="margin-bottom:18px;">
+            <p class="chart-title">📈 Clinical Correlation: BP vs Glucose over Time</p>
+            <div style="position:relative; height:240px;">
+              <canvas id="vitalsCorrelationChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Allergies -->
+          <div style="background:var(--accent-red-light); border:1px solid rgba(220,38,38,0.2); border-radius:var(--radius-md); padding:16px; margin-bottom:18px;">
+            <h3 style="margin:0 0 10px; font-size:14px; color:#991B1B;">🛡️ Patient Documented Allergies</h3>
+            <div id="patientAllergiesList" class="allergy-chips"></div>
+            <form onsubmit="addPatientAllergyFromDoctor(event)" style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+              <input id="docAllergenInput" placeholder="Add allergen (e.g. Penicillin)" required style="min-width:160px; flex:1;">
+              <select id="docSeverityInput" style="min-width:110px;">
+                <option value="mild">🟡 Mild</option>
+                <option value="moderate" selected>🟠 Moderate</option>
+                <option value="severe">🔴 Severe</option>
+              </select>
+              <input id="docReactionInput" placeholder="Reaction notes..." style="min-width:140px; flex:1;">
+              <button class="btn-danger btn-sm" type="submit">+ Add Allergy</button>
+            </form>
+          </div>
+
+          <!-- Medicine History Table -->
+          <h3 style="margin-bottom:10px; font-size:14px;">Medicine Schedule & History</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr><th>Name</th><th>Dosage</th><th>Time Slot & Meal</th><th>Due</th><th>Status</th></tr>
+              </thead>
+              <tbody id="historyBody"></tbody>
+            </table>
+          </div>
+
+          <div class="print-signature" style="display:none;">
+            <p><strong>Doctor Signature:</strong> _________________________</p>
+            <p>Date: <span id="printDate"></span></p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<script src="js/api.js"></script>
+<script src="js/notifications.js"></script>
+<script src="js/accountModal.js"></script>
+<script src="js/profileModal.js"></script>
+<script src="js/doctor.js"></script>
+<script>
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>

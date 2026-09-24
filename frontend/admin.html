@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — MediCare Reminder</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">🏥</div>
+        <div class="sidebar-brand-text">
+          <h3>MediCare</h3>
+          <span>Admin Portal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-user" onclick="openProfileModal()" title="Click to view & edit your administrative credentials & scope">
+      <div class="sidebar-avatar">⚙️</div>
+      <div class="sidebar-user-info">
+        <p class="user-name">Administrator</p>
+        <span class="user-role">System Admin • View Info</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Overview</div>
+      <button class="nav-item active" onclick="scrollToSec('reportsSection', this)">
+        <span class="nav-icon">📊</span> System Reports
+      </button>
+
+      <div class="sidebar-section-label">User Management</div>
+      <button class="nav-item" onclick="scrollToSec('addUserSection', this)">
+        <span class="nav-icon">➕</span> Add User
+      </button>
+      <button class="nav-item" onclick="scrollToSec('doctorsSection', this)">
+        <span class="nav-icon">🩺</span> Doctors
+      </button>
+      <button class="nav-item" onclick="scrollToSec('pharmacistsSection', this)">
+        <span class="nav-icon">💊</span> Pharmacists
+      </button>
+      <button class="nav-item" onclick="scrollToSec('patientsSection', this)">
+        <span class="nav-icon">🧑</span> Patients
+      </button>
+
+      <div class="sidebar-section-label">Configuration</div>
+      <button class="nav-item" onclick="scrollToSec('settingsSection', this)">
+        <span class="nav-icon">⚙️</span> Notification Settings
+      </button>
+      <button class="nav-item" onclick="scrollToSec('vaccinesSection', this)">
+        <span class="nav-icon">💉</span> Vaccine Catalog
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-sidebar-secondary" onclick="openPasswordModal()">
+        <span>👤</span> Account Settings
+      </button>
+      <button class="btn-sidebar-logout" onclick="logout()">
+        <span>🚪</span> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <div class="main-content">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2>Admin Dashboard</h2>
+        <p>System administration, user management & configuration</p>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-pill">⚙️ Administrator</div>
+        <button class="secondary btn-sm" onclick="exportSystemAuditCSV()">📊 Export CSV</button>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Hero Banner -->
+      <div class="hero-banner" style="background: linear-gradient(135deg, #0F1B2D 0%, #0F6E56 100%);">
+        <div class="hero-text">
+          <h2>System Control Center ⚙️</h2>
+          <p>Manage all user accounts, configure system settings, and monitor the healthcare platform from one place.</p>
+        </div>
+        <div style="position:relative; z-index:1; text-align:right; flex-shrink:0;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; width:220px;">
+            <div style="background:rgba(255,255,255,0.12); border-radius:10px; padding:12px; text-align:center; backdrop-filter:blur(8px);">
+              <div style="font-size:22px; font-weight:800; color:white;" id="heroDocCount">—</div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.7);">Doctors</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.12); border-radius:10px; padding:12px; text-align:center; backdrop-filter:blur(8px);">
+              <div style="font-size:22px; font-weight:800; color:white;" id="heroPatCount">—</div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.7);">Patients</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.12); border-radius:10px; padding:12px; text-align:center; backdrop-filter:blur(8px);">
+              <div style="font-size:22px; font-weight:800; color:white;" id="heroPharmCount">—</div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.7);">Pharmacists</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.12); border-radius:10px; padding:12px; text-align:center; backdrop-filter:blur(8px);">
+              <div style="font-size:22px; font-weight:800; color:white;" id="heroMedCount">—</div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.7);">Medicines</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. System Reports -->
+      <div id="reportsSection" class="card card-accent-green">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--primary-light);">📊</div>
+            <div>
+              <p class="card-title">System Reports & Activity</p>
+              <p class="card-subtitle">Real-time statistics across the entire platform</p>
+            </div>
+          </div>
+        </div>
+        <div class="stat-grid" id="reports"></div>
+      </div>
+
+      <!-- 2. Add New User -->
+      <div id="addUserSection" class="card card-accent-blue">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--accent-blue-light);">👤</div>
+            <div>
+              <p class="card-title">Add New User Account</p>
+              <p class="card-subtitle">Create accounts for doctors, pharmacists, and patients</p>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>User Role</label>
+            <select id="newRole">
+              <option value="doctor">🩺 Doctor</option>
+              <option value="pharmacist">💊 Pharmacist</option>
+              <option value="patient">🧑 Patient</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Full Name</label>
+            <input id="newName" placeholder="e.g. Dr. Sarah Johnson" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input id="newEmail" type="email" placeholder="user@medicare.local" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input id="newPassword" type="password" placeholder="Minimum 6 characters" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Specialization / License Number (Optional)</label>
+          <input id="newExtra" placeholder="e.g. Cardiologist  or  PHR-2024-001">
+        </div>
+        <button class="btn-blue" onclick="addUser(event)">➕ Create User Account</button>
+      </div>
+
+      <!-- 3. Doctors List -->
+      <div id="doctorsSection" class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:#F0FDF4;">🩺</div>
+            <div>
+              <p class="card-title">Registered Doctors</p>
+              <p class="card-subtitle">All licensed physicians registered in the system</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Specialization</th>
+                <th style="width:100px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="doctorsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 4. Pharmacists List -->
+      <div id="pharmacistsSection" class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:#F0F9FF;">💊</div>
+            <div>
+              <p class="card-title">Registered Pharmacists</p>
+              <p class="card-subtitle">All licensed pharmacists registered in the system</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>License #</th>
+                <th style="width:100px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="pharmacistsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 5. Patients List -->
+      <div id="patientsSection" class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:#FFF7ED;">🧑</div>
+            <div>
+              <p class="card-title">Patients & Clinical Assignment</p>
+              <p class="card-subtitle">Manage patient accounts and assign to doctors/pharmacists</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Assigned Doctor</th>
+                <th>Assigned Pharmacist</th>
+                <th style="width:100px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="patientsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 6. Notification Settings -->
+      <div id="settingsSection" class="card card-accent-amber">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--accent-amber-light);">⚙️</div>
+            <div>
+              <p class="card-title">Notification Threshold Settings</p>
+              <p class="card-subtitle">Configure how many days in advance patient notifications trigger before medicine expiry</p>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;">
+          <div class="form-group" style="margin:0; flex:1; min-width:200px;">
+            <label>Days Before Expiry Alert</label>
+            <input type="number" id="thresholdInput" min="1" placeholder="e.g. 7">
+          </div>
+          <button class="primary" onclick="updateThreshold(event)" style="margin-bottom:0;">
+            💾 Update Threshold
+          </button>
+        </div>
+      </div>
+
+      <!-- 7. Vaccine Catalog -->
+      <div id="vaccinesSection" class="card card-accent-purple">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon" style="background:var(--accent-purple-light);">💉</div>
+            <div>
+              <p class="card-title">Vaccine Master Catalog</p>
+              <p class="card-subtitle">Manage the list of available vaccines that pharmacists can schedule</p>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:220px;">
+            <input id="vaccineName" placeholder="New vaccine name (e.g. Influenza, Hepatitis B)..." required>
+          </div>
+          <button class="primary" onclick="addVaccine(event)" style="background:var(--accent-purple);">
+            💉 Add Vaccine
+          </button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Vaccine Name</th>
+                <th style="width:120px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="vaccineListBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<script src="js/api.js"></script>
+<script src="js/accountModal.js"></script>
+<script src="js/profileModal.js"></script>
+<script src="js/admin.js"></script>
+<script>
+function scrollToSec(id, btn) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+// Populate hero stat counts after admin.js loads
+const _origLoadReports = typeof loadReports === 'function' ? loadReports : null;
+document.addEventListener('DOMContentLoaded', () => {
+  // Hook into reports to also populate hero mini-stats
+  const observer = new MutationObserver(() => {
+    const stats = document.querySelectorAll('#reports .stat-card');
+    if (stats.length >= 3) {
+      // Try to grab counts from stat-grid values
+      const vals = document.querySelectorAll('#reports .stat-value');
+      if (vals[0]) document.getElementById('heroPatCount').textContent  = vals[0].textContent;
+      if (vals[1]) document.getElementById('heroDocCount').textContent  = vals[1].textContent;
+      if (vals[2]) document.getElementById('heroPharmCount').textContent = vals[2].textContent;
+      if (vals[3]) document.getElementById('heroMedCount').textContent  = vals[3].textContent;
+    }
+  });
+  const reportsEl = document.getElementById('reports');
+  if (reportsEl) observer.observe(reportsEl, { childList: true, subtree: true });
+});
+</script>
+</body>
+</html>
