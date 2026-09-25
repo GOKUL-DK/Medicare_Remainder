@@ -1,5 +1,10 @@
+const RENDER_BACKEND_URL = 'https://medicare-remainder.onrender.com/api';
+
 const API = {
-  base: '/api',
+  // Dynamically target Render backend when deployed on Vercel
+  base: window.location.hostname.includes('vercel.app')
+    ? RENDER_BACKEND_URL
+    : '/api',
 
   token() {
     return localStorage.getItem('mc_token');
@@ -31,11 +36,29 @@ const API = {
     const token = this.token();
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(this.base + path, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    let res;
+    try {
+      res = await fetch(this.base + path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch (netErr) {
+      // Fallback check if Vercel serverless /api route is present
+      if (this.base === RENDER_BACKEND_URL) {
+        try {
+          res = await fetch('/api' + path, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+          });
+        } catch (e) {
+          throw new Error('Server connection failed. Render free tier may be spinning up — please try again in 10-20 seconds.');
+        }
+      } else {
+        throw new Error('Unable to connect to MediCare server.');
+      }
+    }
 
     if (res.status === 401 && !path.startsWith('/auth/login')) {
       this.clearSession();

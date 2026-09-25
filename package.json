@@ -1,0 +1,16 @@
+{
+  "name": "medicare-reminder",
+  "version": "1.0.0",
+  "description": "MediCare Reminder Healthcare Web Platform",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "sql.js": "^1.12.0"
+  }
+}

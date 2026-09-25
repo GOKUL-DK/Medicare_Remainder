@@ -13,7 +13,7 @@ const fs        = require('fs');
 const bcrypt    = require('bcryptjs');
 const initSqlJs = require('sql.js');
 
-const DB_PATH = path.join(__dirname, 'medicare.db');
+const DB_PATH = process.env.VERCEL ? '/tmp/medicare.db' : path.join(__dirname, 'medicare.db');
 
 // ── Internal state ────────────────────────────────────────────────────────────
 let _realDb  = null;   // the actual sql.js Database instance (set after init)
@@ -21,7 +21,13 @@ let _dbProxy = null;   // the proxy object returned to callers
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function saveDb() {
-  fs.writeFileSync(DB_PATH, Buffer.from(_realDb.export()));
+  try {
+    if (_realDb) {
+      fs.writeFileSync(DB_PATH, Buffer.from(_realDb.export()));
+    }
+  } catch (err) {
+    console.warn('Failed to save DB to disk:', err.message);
+  }
 }
 
 function normaliseParams(params) {
@@ -71,9 +77,22 @@ function makeProxy() {
 
 // ── Async initializer (called once; server.js awaits db.ready) ────────────────
 const ready = initSqlJs().then(SQL => {
-  _realDb = fs.existsSync(DB_PATH)
-    ? new SQL.Database(fs.readFileSync(DB_PATH))
-    : new SQL.Database();
+  const seedPath = path.join(__dirname, 'medicare.db');
+  if (process.env.VERCEL && !fs.existsSync(DB_PATH) && fs.existsSync(seedPath)) {
+    try {
+      fs.copyFileSync(seedPath, DB_PATH);
+    } catch (e) {
+      console.warn('Could not copy seed DB to /tmp:', e.message);
+    }
+  }
+
+  if (fs.existsSync(DB_PATH)) {
+    _realDb = new SQL.Database(fs.readFileSync(DB_PATH));
+  } else if (fs.existsSync(seedPath)) {
+    _realDb = new SQL.Database(fs.readFileSync(seedPath));
+  } else {
+    _realDb = new SQL.Database();
+  }
 
   _realDb.run('PRAGMA foreign_keys = ON');
 

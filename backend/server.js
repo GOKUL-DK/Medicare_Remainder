@@ -13,6 +13,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Ensure DB is initialized before processing requests
+app.use(async (req, res, next) => {
+  try {
+    await db.ready;
+    next();
+  } catch (err) {
+    console.error('Database initialization failed:', err);
+    res.status(500).json({ error: 'Database initialisation failed' });
+  }
+});
+
 app.use('/api/auth',       authRoutes);
 app.use('/api/admin',      adminRoutes);
 app.use('/api/pharmacist', pharmacistRoutes);
@@ -26,14 +37,25 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISO
 
 const PORT = process.env.PORT || 3000;
 
-// Wait for the DB to initialise (sql.js is async) before accepting requests
+// Initialize background monitor when DB is ready
 db.ready.then(() => {
-  const { startAdherenceMonitor } = require('./services/adherenceMonitor');
-  app.listen(PORT, () => {
-    console.log(`MediCare Reminder server running on http://localhost:${PORT}`);
+  try {
+    const { startAdherenceMonitor } = require('./services/adherenceMonitor');
     startAdherenceMonitor();
-  });
+  } catch (e) {
+    console.error('Failed to start adherence monitor:', e);
+  }
 }).catch(err => {
   console.error('Failed to initialise database:', err);
-  process.exit(1);
 });
+
+// Run HTTP server if started directly via node
+if (require.main === module) {
+  db.ready.then(() => {
+    app.listen(PORT, () => {
+      console.log(`MediCare Reminder server running on http://localhost:${PORT}`);
+    });
+  });
+}
+
+module.exports = app;
